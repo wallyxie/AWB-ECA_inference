@@ -7,21 +7,21 @@ return temp_ref + (5 * t) / (80 * 24 * 365) + 10 * sin((2 * pi() / 24) * t) + 10
 
 // Exogenous SOC input function.
 real i_s_func(real t) {
-return 0.001 + 0.0005 * sin((2 * pi() / (24 * 365)) * t)
+return 0.001 + 0.0005 * sin((2 * pi() / (24 * 365)) * t);
 }
 
 // Exogenous DOC input function.
 real i_d_func(real t) {
-return 0.0001 + 0.00005 * sin((2 * pi() / (24 * 365)) * t)
+return 0.0001 + 0.00005 * sin((2 * pi() / (24 * 365)) * t);
 }
 
 // Function for enforcing Arrhenius temperature dependency of ODE parameter.
-real arrhenius_temp(real input, real Ea, real temp, real temp_ref) {
+real arrhenius_temp(real input, real temp, real Ea, real temp_ref) {
 return input * exp(-Ea / 0.008314 * (1 / temp - 1 / temp_ref));
 }
 
 // Function for enforcing linear temperature dependency of ODE parameter.
-real linear_temp(real input, real Q, real temp, real temp_ref) {
+real linear_temp(real input, real temp, real Q, real temp_ref) {
 return input - Q * (temp - temp_ref);
 }
 
@@ -38,7 +38,6 @@ real[] AWB_ECA_ODE(real t, real[] C, real[] theta, real[] x_r, int[] x_i) {
 real dC_dt[4];
 
 // Initiate theta variables for future assignment.
-
 real u_Q_ref; // Reference carbon use efficiency.
 real Q; // Carbon use efficiency linear dependence negative slope.
 real a_MSA; // AWB MBC-to-SOC transfer fraction. 
@@ -46,54 +45,72 @@ real V_DE_ref; // Reference SOC decomposition V_max
 real V_UE_ref; // Reference DOC uptake V_max.
 real K_DE; // SOC decomposition K_m.
 real K_UE; // DOC uptake K_m.
-real Ea_V; // SOC V_max activation energy
-real Ea_VU; // DOC V_max activation energy
-real Ea_K; // SOC K_m activation energy
-real Ea_KU; // DOC K_m activation energy 
-real r_M; // MBC turnover rate
-real r_E; // Enzyme production rate
-real r_L; // Enzyme loss rate
-real a_MS; // Fraction of dead MBC transferred to SOC
-real E_C_f; // Reference carbon use efficiency (CUE)
-real m_t; // CUE slope
+real Ea_V_DE; // SOC V_max activation energy.
+real Ea_V_UE; // DOC V_max activation energy.
+real r_M; // MBC turnover rate.
+real r_E; // Enzyme production rate.
+real r_L; // Enzyme loss rate.
 
+// Initiate exogenous input and forcing variables for future assignment.
+real temp;
+real i_s;
+real i_d;
+real u_Q; // Forced u_Q_ref.
+real V_DE; // Forced V_DE.
+real V_UE; // Forced V_UE.
 
-// Dependent expressions
-
+// Initiate dependent expressions.
 real F_S; // SOC decomposition
 real F_D; // DOC uptake
-real F_M; // MBC death
-real F_E; // Enzyme production
-real F_L; // Enzyme loss
 
-/*
-*Match parameters to thetas
-*/
+// Assign variables to thetas.
+u_Q_ref = theta[1];
+Q = theta[2];
+a_MSA = theta[3];
+V_DE_ref = theta[1];
+V_UE_ref = theta[2];
+K_DE = theta[3];
+K_UE = theta[4];
+Ea_V_DE = theta[5];
+Ea_V_UE = theta[6];
+r_M = theta[7];
+r_E = theta[8];
+r_L = theta[9];
 
-V_DE_ref = theta[1]; // SOC reference V_max
-V_UE_ref = theta[2]; // DOC reference V_max
-K_DE_ref = theta[3]; // SOC reference K_m
-K_UE_ref = theta[4]; // DOC reference K_m
-Ea_V = theta[5]; // SOC V_max activation energy
-Ea_VU = theta[6]; // DOC V_max activation energy
-Ea_K = theta[7]; // SOC K_m activation energy
-Ea_KU = theta[8]; // DOC K_m activation energy 
-r_M = theta[9]; // MBC turnover rate
-a_MS = theta[10]; // Fraction of dead MBC transferred to SOC
-E_C_f = theta[11]; // Carbon use efficiency
+// Assign input and forcing variables to appropriate value at time t.
+temp = temp_func(t, x_r[1]); // x_r[1] is temp_ref 283.
+i_s = i_s_func(t);
+i_d = i_d_func(t);
 
-r_L = x_r[FILL IN HERE];
-r_E = x_r[FILL IN HERE];
+// Force temperature dependent parameters.
+u_Q = linear_temp(u_Q_ref, temp, Q, x_r[1]);
+V_DE = arrhenius_temp(V_DE_ref, temp, Ea_V_DE, x_r[1]);
+V_UE = arrhenius_temp(V_UE_ref, temp, Ea_V_UE, x_r[1]);
 
-F_S = V_f * C[4] * C[1] / (K_f + C[1]);
-F_D = V_U_f * C[3] * C[2] / (K_U_f + C[2]);
-F_M = r_M * C[3];
-F_E = r_E * C[3];
-F_L = r_L * C[4];
+// Assign dependent expressions.
+F_S = V_DE * C[4] * C[1] / (K_DE + C[4] + C[1]);
+F_D = V_UE * C[3] * C[2] / (K_UE + C[3] + C[2]);
 
-dC_dt[1] = x_r[3] + a_MS * F_M - F_S;
-dC_dt[2] = x_r[4] + (1 - a_MS) * F_M + F_S + F_L - F_D;
-dC_dt[3] = F_D * E_C_f - F_M - F_E;
-dC_dt[4] = F_E - F_L;
+// Compute derivatives.
+dC_dt[1] = i_s + a_MSA * r_M * C[3] - F_S;
+dC_dt[2] = i_d + (1 - a_MSA) * r_M * C[3] + F_S + r_L * C[4] - F_D;
+dC_dt[3] = u_Q * F_D * - (r_M + r_E) * C[3];
+dC_dt[4] = r_E * C[3] - r_L * C[4];
 
 return dC_dt;}
+}
+
+data {
+}
+
+transformed data {
+}
+
+parameters {
+}
+
+model {
+}
+
+generated quantities {
+}
