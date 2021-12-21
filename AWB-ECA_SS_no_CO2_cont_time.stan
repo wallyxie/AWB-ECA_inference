@@ -112,14 +112,14 @@ data {
   real<lower=0> r_M_mean;
   real<lower=0> r_E_mean;
   real<lower=0> r_L_mean;
+  real<lower=0> temp_ref; // Reference temperature for temperature forcing.
+  real<lower=0> temp_rise; // Assumed increase in temperature (°C/K) over next 80 years.
+  real<lower=0> prior_scale_factor; // Factor multiplying parameter means to obtain prior standard deviations.
+  real<lower=0> obs_error_scale; // Observation noise factor multiplying observations of model output x_hat.
 }
 
 transformed data {
   real t0 = 0; // Initial time.
-  real temp_ref = 283; // Reference temperature for temperature forcing.
-  real temp_rise = 5; // Assumed increase in temperature (°C/K) over next 80 years.
-  real prior_scale_factor = 0.25; // Factor multiplying parameter means to obtain prior standard deviations.
-  real obs_error_scale = 0.1; // Observation noise factor multiplying observations of model output x_hat.
 }
 
 parameters {
