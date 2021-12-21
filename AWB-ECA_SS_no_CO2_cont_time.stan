@@ -99,7 +99,7 @@ data {
   int<lower=1> N_t; // Number of observations.
   array[N_t] real<lower=0> ts; // Univariate array of observation time steps.
   array[N_t] vector<lower=0>[state_dim] y; // Multidimensional array of state observations bounded at 0.
-  vector<lower=0>[state_dim] y_hat0; // Initial ODE conditions. [60.35767864, 5.16483124, 2.0068896, 0.99331202] for AWB-ECA instance of data.
+  vector<lower=0>[state_dim] x_hat0; // Initial ODE conditions. [60.35767864, 5.16483124, 2.0068896, 0.99331202] for AWB-ECA instance of data.
   real<lower=0> u_Q_ref_mean;
   real<lower=0> Q_mean;
   real<lower=0> a_MSA_mean;
@@ -138,7 +138,7 @@ parameters {
 }
 
 transformed parameters {
-  array[N_t] vector<lower=0>[state_dim] y_hat = ode_ckrk(AWB_ECA_ODE, y_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); 
+  array[N_t] vector<lower=0>[state_dim] x_hat = ode_ckrk(AWB_ECA_ODE, y_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); 
 }
 
 model {
@@ -156,7 +156,7 @@ model {
   r_L ~ normal(r_L_mean, r_L_mean * prior_scale_factor) T[0, 0.1];
 
   // Likelihood evaluation.
-  y ~ normal(y_hat, obs_error);
+  y ~ normal(x_hat, obs_error);
 }
 
 generated quantities {
