@@ -1,8 +1,8 @@
 functions {
 
   // Temperature function for ODE forcing.
-  real temp_func(real t, real temp_ref) {
-    return temp_ref + (5 * t) / (80 * 24 * 365) + 10 * sin((2 * pi() / 24) * t) + 10 * sin((2 * pi() / (24 * 365)) * t);
+  real temp_func(real t, real temp_ref, real temp_rise) {
+    return temp_ref + (temp_rise * t) / (80 * 24 * 365) + 10 * sin((2 * pi() / 24) * t) + 10 * sin((2 * pi() / (24 * 365)) * t);
   }
 
   // Exogenous SOC input function.
@@ -33,21 +33,21 @@ functions {
   C[4] is extracellular enzyme carbon (EEC) density.
   */
 
-  real[] AWB_ECA_ODE(real t, real[] C, real[] theta, real[] x_r, int[] x_i) {
-
-    // Initiate theta variables for future assignment.
-    real u_Q_ref; // Reference carbon use efficiency.
-    real Q; // Carbon use efficiency linear dependence negative slope.
-    real a_MSA; // AWB MBC-to-SOC transfer fraction. 
-    real V_DE_ref; // Reference SOC decomposition V_max 
-    real V_UE_ref; // Reference DOC uptake V_max.
-    real K_DE; // SOC decomposition K_m.
-    real K_UE; // DOC uptake K_m.
-    real Ea_V_DE; // SOC V_max activation energy.
-    real Ea_V_UE; // DOC V_max activation energy.
-    real r_M; // MBC turnover rate.
-    real r_E; // Enzyme production rate.
-    real r_L; // Enzyme loss rate.
+  vector AWB_ECA_ODE(real t, vector C,
+                     real u_Q_ref, // Reference carbon use efficiency.
+                     real Q, // Carbon use efficiency linear dependence negative slope.
+                     real a_MSA, // AWB MBC-to-SOC transfer fraction.
+                     real K_DE, // SOC decomposition K_m.
+                     real K_UE, // DOC uptake K_m.
+                     real V_DE_ref, // Reference SOC decomposition V_max.
+                     real V_UE_ref, // Reference DOC uptake V_max.
+                     real Ea_V_DE, // SOC V_max activation energy.
+                     real Ea_V_UE, // DOC V_max activation energy.
+                     real r_M, // MBC turnover rate.
+                     real r_E, // Enzyme production rate.
+                     real r_L, // Enzyme loss rate.
+                     real temp_ref,
+                     real temp_rise) {
 
     // Initiate exogenous input and forcing variables for future assignment.
     real temp;
@@ -61,29 +61,15 @@ functions {
     real F_S; // SOC decomposition
     real F_D; // DOC uptake
 
-    // Assign variables to thetas.
-    u_Q_ref = theta[1];
-    Q = theta[2];
-    a_MSA = theta[3];
-    V_DE_ref = theta[1];
-    V_UE_ref = theta[2];
-    K_DE = theta[3];
-    K_UE = theta[4];
-    Ea_V_DE = theta[5];
-    Ea_V_UE = theta[6];
-    r_M = theta[7];
-    r_E = theta[8];
-    r_L = theta[9];
-
     // Assign input and forcing variables to appropriate value at time t.
-    temp = temp_func(t, x_r[1]); // x_r[1] is temp_ref 283.
+    temp = temp_func(t, temp_ref, temp_rise); // x_r[1] is temp_ref 283.
     i_s = i_s_func(t);
     i_d = i_d_func(t);
 
     // Force temperature dependent parameters.
-    u_Q = linear_temp(u_Q_ref, temp, Q, x_r[1]);
-    V_DE = arrhenius_temp(V_DE_ref, temp, Ea_V_DE, x_r[1]);
-    V_UE = arrhenius_temp(V_UE_ref, temp, Ea_V_UE, x_r[1]);
+    u_Q = linear_temp(u_Q_ref, temp, Q, temp_ref);
+    V_DE = arrhenius_temp(V_DE_ref, temp, Ea_V_DE, temp_ref);
+    V_UE = arrhenius_temp(V_UE_ref, temp, Ea_V_UE, temp_ref);
 
     // Assign dependent expressions.
     F_S = V_DE * C[4] * C[1] / (K_DE + C[4] + C[1]);
@@ -96,21 +82,98 @@ functions {
     dCdt[3] = u_Q * F_D * - (r_M + r_E) * C[3];
     dCdt[4] = r_E * C[3] - r_L * C[4];
 
-    return to_array_1d(dCdt);
+    return dCdt;
+  }
+
+  // From https://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/12.
+  real normal_lb_ub_rng(real mu, real sigma, real lb, real ub) {
+      real p1 = normal_cdf(lb, mu, sigma);  // cdf with lower bound
+      real p2 = normal_cdf(ub, mu, sigma);  // cdf with upper bound
+      real u = uniform_rng(p1, p2);
+      return (sigma * inv_Phi(u)) + mu;  // inverse cdf 
   }
 }
 
 data {
+  real<lower=1> state_dim; // Number of state dimensions (4 for AWB).
+  int<lower=1> N_t; // Number of observations.
+  array[N_t] real<lower=0> ts; // Univariate array of observation time steps.
+  array[N_t] vector<lower=0>[state_dim] y; // Multidimensional array of state observations bounded at 0.
+  vector<lower=0>[state_dim] y_hat0; // Initial ODE conditions. [60.35767864, 5.16483124, 2.0068896, 0.99331202] for AWB-ECA instance of data.
+  real<lower=0> u_Q_ref_mean;
+  real<lower=0> Q_mean;
+  real<lower=0> a_MSA_mean;
+  real<lower=0> K_DE_mean;
+  real<lower=0> K_UE_mean;
+  real<lower=0> V_DE_mean;
+  real<lower=0> V_UE_mean;
+  real<lower=0> Ea_V_DE_mean;
+  real<lower=0> Ea_V_UE_mean;
+  real<lower=0> r_M_mean;
+  real<lower=0> r_E_mean;
+  real<lower=0> r_L_mean;
 }
 
 transformed data {
+  real t0 = 0; // Initial time.
+  real temp_ref = 283; // Reference temperature for temperature forcing.
+  real temp_rise = 5; // Assumed increase in temperature (°C/K) over next 80 years.
+  real prior_scale_factor = 0.25; // Factor multiplying parameter means to obtain prior standard deviations.
+  real obs_error_scale = 0.1; // Observation noise factor multiplying observations of model output x_hat.
 }
 
 parameters {
+  real<lower=0> u_Q_ref; // Reference carbon use efficiency.
+  real<lower=0> Q; // Carbon use efficiency linear dependence negative slope.
+  real<lower=0> a_MSA; // AWB MBC-to-SOC transfer fraction.
+  real<lower=0> K_DE; // SOC decomposition K_m.
+  real<lower=0> K_UE; // DOC uptake K_m.
+  real<lower=0> V_DE_ref; // Reference SOC decomposition V_max.
+  real<lower=0> V_UE_ref; // Reference DOC uptake V_max.
+  real<lower=0> Ea_V_DE; // SOC V_max activation energy.
+  real<lower=0> Ea_V_UE; // DOC V_max activation energy.
+  real<lower=0> r_M; // MBC turnover rate.
+  real<lower=0> r_E; // Enzyme production rate.
+  real<lower=0> r_L; // Enzyme loss rate.
+}
+
+transformed parameters {
+  array[N_t] vector<lower=0>[state_dim] y_hat = ode_ckrk(AWB_ECA_ODE, y_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); 
 }
 
 model {
+  u_Q_ref ~ normal(u_Q_ref_mean, u_Q_ref_mean * prior_scale_factor) T[0, 1];
+  Q ~ normal(Q_mean, Q_mean * prior_scale_factor) T[0, 0.1];
+  a_MSA ~ normal(a_MSA_mean, a_MSA_mean * prior_scale_factor) T[0, 1];
+  K_DE ~ normal(K_DE_mean, K_DE_mean * prior_scale_factor) T[0, 5000];
+  K_UE ~ normal(K_UE_mean, K_UE_mean * prior_scale_factor) T[0, 1];
+  V_DE_ref ~ normal(V_DE_ref_mean, V_DE_ref_mean * prior_scale_factor) T[0, 1];
+  V_UE_ref ~ normal(V_UE_ref_mean, V_UE_ref_mean * prior_scale_factor) T[0, 0.1];
+  Ea_V_DE ~ normal(Ea_V_DE_mean, Ea_V_DE_mean * prior_scale_factor) T[5, 80];
+  Ea_V_UE ~ normal(Ea_V_UE_mean, Ea_V_UE_mean * prior_scale_factor) T[5, 80];
+  r_M ~ normal(r_M_mean, r_M_mean * prior_scale_factor) T[0, 0.1];
+  r_E ~ normal(r_E_mean, r_E_mean * prior_scale_factor) T[0, 0.1];
+  r_L ~ normal(r_L_mean, r_L_mean * prior_scale_factor) T[0, 0.1];
+
+  // Likelihood evaluation.
+  y ~ normal(y_hat, obs_error);
 }
 
 generated quantities {
+  array[N_t] vector<lower=0>[state_dim] y_post_pred_mean;
+  array[N_t] vector<lower=0>[state_dim] y_post_pred;
+  y_post_pred_mean = ode_ckrk(AWB_ECA_ODE, y_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L);
+  y_post_pred = normal_rng(y_post_pred_mean, obs_error_scale);
+  real u_Q_ref = normal_lb_ub_rng(u_Q_ref_mean, u_Q_ref_mean * prior_scale_factor, 0, 1);
+  real Q = normal_lb_ub_rng(Q_mean, Q_mean * prior_scale_factor, 0, 0.1);
+  real a_MSA = normal_lb_ub_rng(a_MSA_mean, a_MSA_mean * prior_scale_factor, 0, 1);
+  real K_DE = normal_lb_ub_rng(K_DE_mean, K_DE_mean * prior_scale_factor, 0, 5000);
+  real K_UE = normal_lb_ub_rng(K_UE_mean, K_UE_mean * prior_scale_factor, 0, 1);
+  real V_DE_ref = normal_lb_ub_rng(V_DE_ref_mean, V_DE_ref_mean * prior_scale_factor, 0, 1);
+  real V_UE_ref = normal_lb_ub_rng(V_UE_ref_mean, V_UE_ref_mean * prior_scale_factor, 0, 0.1);
+  real Ea_V_DE = normal_lb_ub_rng(Ea_V_DE_mean, Ea_V_DE_mean * prior_scale_factor, 5, 80);
+  real Ea_V_UE = normal_lb_ub_rng(Ea_V_UE_mean, Ea_V_UE_mean * prior_scale_factor, 5, 80);
+  real r_M = normal_lb_ub_rng(r_M_mean, r_M_mean * prior_scale_factor, 0, 0.1);
+  real r_E = normal_lb_ub_rng(r_E_mean, r_E_mean * prior_scale_factor, 0, 0.1);
+  real r_L = normal_lb_ub_rng(r_L_mean, r_L_mean * prior_scale_factor, 0, 0.1);
 }
