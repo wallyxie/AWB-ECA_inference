@@ -75,8 +75,10 @@ functions {
     F_S = V_DE * C[4] * C[1] / (K_DE + C[4] + C[1]);
     F_D = V_UE * C[3] * C[2] / (K_UE + C[3] + C[2]);
 
+    // Initiate vector for storing derivatives.
+    vector[4] dCdt;
+
     // Compute derivatives.
-    vector[4] dCdt; // Initiate vector for storing derivatives.
     dCdt[1] = i_s + a_MSA * r_M * C[3] - F_S;
     dCdt[2] = i_d + (1 - a_MSA) * r_M * C[3] + F_S + r_L * C[4] - F_D;
     dCdt[3] = u_Q * F_D * - (r_M + r_E) * C[3];
@@ -157,7 +159,7 @@ model {
 
   // Likelihood evaluation.
   // melt y and x_hat.
-  // y ~ normal(x_hat, obs_error_scale * x_hat);
+  y ~ normal(x_hat, obs_error_scale * x_hat);
 }
 
 generated quantities {
