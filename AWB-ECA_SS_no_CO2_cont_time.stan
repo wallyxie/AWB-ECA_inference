@@ -161,10 +161,10 @@ model {
 }
 
 generated quantities {
-  array[N_t] vector<lower=0>[state_dim] y_post_pred_mean;
-  array[N_t] vector<lower=0>[state_dim] y_post_pred;
-  y_post_pred_mean = ode_ckrk(AWB_ECA_ODE, y_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L);
-  y_post_pred = normal_rng(y_post_pred_mean, obs_error_scale);
+  array[N_t] vector<lower=0>[state_dim] x_hat_post_pred;
+  array[N_t] vector<lower=0>[state_dim] y_hat_post_pred;
+  x_hat_post_pred = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L);
+  y_hat_post_pred = normal_rng(x_hat_post_pred, obs_error_scale * x_hat_post_pred);
   real u_Q_ref_post = normal_lb_ub_rng(u_Q_ref_mean, u_Q_ref_mean * prior_scale_factor, 0, 1);
   real Q_post = normal_lb_ub_rng(Q_mean, Q_mean * prior_scale_factor, 0, 0.1);
   real a_MSA_post = normal_lb_ub_rng(a_MSA_mean, a_MSA_mean * prior_scale_factor, 0, 1);
