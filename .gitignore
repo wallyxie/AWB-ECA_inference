@@ -3,5 +3,6 @@
 *.swp
 *.pyc
 *checkpoint.ipynb
+*checkpoints
 .DS_Store
 .Rhistory

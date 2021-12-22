@@ -122,6 +122,7 @@ data {
 
 transformed data {
   real t0 = 0; // Initial time.
+  //Reshape y here.
 }
 
 parameters {
@@ -141,6 +142,7 @@ parameters {
 
 transformed parameters {
   array[N_t] vector<lower=0>[state_dim] x_hat = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); 
+  //Reshape x_hat here.
 }
 
 model {

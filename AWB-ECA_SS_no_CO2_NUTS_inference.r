@@ -22,7 +22,8 @@ y <- y_full %>% filter(hour <= t)
 ts <- y$hour
 N_t <- length(ts)
 y <- y %>% select(-hour)
-y <- split(y, 1:nrow(y))
+y <- split(y, 1:nrow(y)) #Convert data observations to list of rows to correspond to Stan's array of vectors type.
+#y <- as.list(y) #Convert data observations to list of columns to correspond to Stan's array of vectors type.
 
 #Parameter prior means
 u_Q_ref_mean <- 0.25
