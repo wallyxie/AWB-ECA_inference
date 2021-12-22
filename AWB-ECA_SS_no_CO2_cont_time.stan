@@ -103,7 +103,7 @@ data {
   real<lower=0> temp_rise; // Assumed increase in temperature (°C/K) over next 80 years.
   real<lower=0> prior_scale_factor; // Factor multiplying parameter means to obtain prior standard deviations.
   real<lower=0> obs_error_scale; // Observation noise factor multiplying observations of model output x_hat.
-  vector<lower=0>[state_dim] x_hat0; // Initial ODE conditions. [60.35767864, 5.16483124, 2.0068896, 0.99331202] for AWB-ECA instance of data.
+  vector<lower=0>[state_dim] x_hat0; // Initial ODE conditions.
   real<lower=0> u_Q_ref_mean;
   real<lower=0> Q_mean;
   real<lower=0> a_MSA_mean;
@@ -156,8 +156,8 @@ model {
   r_L ~ normal(r_L_mean, r_L_mean * prior_scale_factor) T[0, 0.1];
 
   // Likelihood evaluation.
+  // melt y and x_hat.
   // y ~ normal(x_hat, obs_error_scale * x_hat);
-  y ~ normal(x_hat, 1);
 }
 
 generated quantities {
