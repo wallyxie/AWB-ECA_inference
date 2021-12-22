@@ -95,7 +95,7 @@ functions {
 }
 
 data {
-  real<lower=1> state_dim; // Number of state dimensions (4 for AWB).
+  int<lower=1> state_dim; // Number of state dimensions (4 for AWB).
   int<lower=1> N_t; // Number of observations.
   array[N_t] real<lower=0> ts; // Univariate array of observation time steps.
   array[N_t] vector<lower=0>[state_dim] y; // Multidimensional array of state observations bounded at 0.
@@ -109,8 +109,8 @@ data {
   real<lower=0> a_MSA_mean;
   real<lower=0> K_DE_mean;
   real<lower=0> K_UE_mean;
-  real<lower=0> V_DE_mean;
-  real<lower=0> V_UE_mean;
+  real<lower=0> V_DE_ref_mean;
+  real<lower=0> V_UE_ref_mean;
   real<lower=0> Ea_V_DE_mean;
   real<lower=0> Ea_V_UE_mean;
   real<lower=0> r_M_mean;
@@ -138,7 +138,7 @@ parameters {
 }
 
 transformed parameters {
-  array[N_t] vector<lower=0>[state_dim] x_hat = ode_ckrk(AWB_ECA_ODE, y_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); 
+  array[N_t] vector<lower=0>[state_dim] x_hat = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); 
 }
 
 model {
@@ -156,7 +156,8 @@ model {
   r_L ~ normal(r_L_mean, r_L_mean * prior_scale_factor) T[0, 0.1];
 
   // Likelihood evaluation.
-  y ~ normal(x_hat, obs_error);
+  // y ~ normal(x_hat, obs_error_scale * x_hat);
+  y ~ normal(x_hat, 1);
 }
 
 generated quantities {
