@@ -99,6 +99,10 @@ data {
   int<lower=1> N_t; // Number of observations.
   array[N_t] real<lower=0> ts; // Univariate array of observation time steps.
   array[N_t] vector<lower=0>[state_dim] y; // Multidimensional array of state observations bounded at 0.
+  real<lower=0> temp_ref; // Reference temperature for temperature forcing.
+  real<lower=0> temp_rise; // Assumed increase in temperature (°C/K) over next 80 years.
+  real<lower=0> prior_scale_factor; // Factor multiplying parameter means to obtain prior standard deviations.
+  real<lower=0> obs_error_scale; // Observation noise factor multiplying observations of model output x_hat.
   vector<lower=0>[state_dim] x_hat0; // Initial ODE conditions. [60.35767864, 5.16483124, 2.0068896, 0.99331202] for AWB-ECA instance of data.
   real<lower=0> u_Q_ref_mean;
   real<lower=0> Q_mean;
@@ -112,10 +116,6 @@ data {
   real<lower=0> r_M_mean;
   real<lower=0> r_E_mean;
   real<lower=0> r_L_mean;
-  real<lower=0> temp_ref; // Reference temperature for temperature forcing.
-  real<lower=0> temp_rise; // Assumed increase in temperature (°C/K) over next 80 years.
-  real<lower=0> prior_scale_factor; // Factor multiplying parameter means to obtain prior standard deviations.
-  real<lower=0> obs_error_scale; // Observation noise factor multiplying observations of model output x_hat.
 }
 
 transformed data {
@@ -164,16 +164,16 @@ generated quantities {
   array[N_t] vector<lower=0>[state_dim] y_post_pred;
   y_post_pred_mean = ode_ckrk(AWB_ECA_ODE, y_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L);
   y_post_pred = normal_rng(y_post_pred_mean, obs_error_scale);
-  real u_Q_ref = normal_lb_ub_rng(u_Q_ref_mean, u_Q_ref_mean * prior_scale_factor, 0, 1);
-  real Q = normal_lb_ub_rng(Q_mean, Q_mean * prior_scale_factor, 0, 0.1);
-  real a_MSA = normal_lb_ub_rng(a_MSA_mean, a_MSA_mean * prior_scale_factor, 0, 1);
-  real K_DE = normal_lb_ub_rng(K_DE_mean, K_DE_mean * prior_scale_factor, 0, 5000);
-  real K_UE = normal_lb_ub_rng(K_UE_mean, K_UE_mean * prior_scale_factor, 0, 1);
-  real V_DE_ref = normal_lb_ub_rng(V_DE_ref_mean, V_DE_ref_mean * prior_scale_factor, 0, 1);
-  real V_UE_ref = normal_lb_ub_rng(V_UE_ref_mean, V_UE_ref_mean * prior_scale_factor, 0, 0.1);
-  real Ea_V_DE = normal_lb_ub_rng(Ea_V_DE_mean, Ea_V_DE_mean * prior_scale_factor, 5, 80);
-  real Ea_V_UE = normal_lb_ub_rng(Ea_V_UE_mean, Ea_V_UE_mean * prior_scale_factor, 5, 80);
-  real r_M = normal_lb_ub_rng(r_M_mean, r_M_mean * prior_scale_factor, 0, 0.1);
-  real r_E = normal_lb_ub_rng(r_E_mean, r_E_mean * prior_scale_factor, 0, 0.1);
-  real r_L = normal_lb_ub_rng(r_L_mean, r_L_mean * prior_scale_factor, 0, 0.1);
+  real u_Q_ref_post = normal_lb_ub_rng(u_Q_ref_mean, u_Q_ref_mean * prior_scale_factor, 0, 1);
+  real Q_post = normal_lb_ub_rng(Q_mean, Q_mean * prior_scale_factor, 0, 0.1);
+  real a_MSA_post = normal_lb_ub_rng(a_MSA_mean, a_MSA_mean * prior_scale_factor, 0, 1);
+  real K_DE_post = normal_lb_ub_rng(K_DE_mean, K_DE_mean * prior_scale_factor, 0, 5000);
+  real K_UE_post = normal_lb_ub_rng(K_UE_mean, K_UE_mean * prior_scale_factor, 0, 1);
+  real V_DE_ref_post = normal_lb_ub_rng(V_DE_ref_mean, V_DE_ref_mean * prior_scale_factor, 0, 1);
+  real V_UE_ref_post = normal_lb_ub_rng(V_UE_ref_mean, V_UE_ref_mean * prior_scale_factor, 0, 0.1);
+  real Ea_V_DE_post = normal_lb_ub_rng(Ea_V_DE_mean, Ea_V_DE_mean * prior_scale_factor, 5, 80);
+  real Ea_V_UE_post = normal_lb_ub_rng(Ea_V_UE_mean, Ea_V_UE_mean * prior_scale_factor, 5, 80);
+  real r_M_post = normal_lb_ub_rng(r_M_mean, r_M_mean * prior_scale_factor, 0, 0.1);
+  real r_E_post = normal_lb_ub_rng(r_E_mean, r_E_mean * prior_scale_factor, 0, 0.1);
+  real r_L_post = normal_lb_ub_rng(r_L_mean, r_L_mean * prior_scale_factor, 0, 0.1);
 }
