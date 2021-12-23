@@ -148,6 +148,7 @@ transformed parameters {
       x_hat[j, i] = x_hat_intmd[i, j];
     }
   }
+  //print("Leapfrog x: ", x_hat);
 }
 
 model {
@@ -163,6 +164,7 @@ model {
   r_M ~ normal(r_M_prior_dist_params[1], r_M_prior_dist_params[1] * prior_scale_factor) T[r_M_prior_dist_params[2], r_M_prior_dist_params[3]];
   r_E ~ normal(r_E_prior_dist_params[1], r_E_prior_dist_params[1] * prior_scale_factor) T[r_E_prior_dist_params[2], r_E_prior_dist_params[3]];
   r_L ~ normal(r_L_prior_dist_params[1], r_L_prior_dist_params[1] * prior_scale_factor) T[r_L_prior_dist_params[2], r_L_prior_dist_params[3]];
+  //print("Leapfrog theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
 
   // Likelihood evaluation.
   for (i in 1:state_dim) {
@@ -171,10 +173,12 @@ model {
 }
 
 generated quantities {
-    print("Sampled theta values: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
   array[N_t] vector<lower=0>[state_dim] x_hat_post_pred_intmd;
   array[state_dim] vector<lower=0>[N_t] x_hat_post_pred;  
   array[state_dim, N_t] real<lower=0> y_hat_post_pred;
+
+  print("Iteration theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
+
   x_hat_post_pred_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
   // Transform posterior predictive model output to match observations y in dimensions, [state_dim, N_t].
   for (i in 1:N_t) {
@@ -182,11 +186,13 @@ generated quantities {
       x_hat_post_pred[j, i] = x_hat_post_pred_intmd[i, j];
     }
   }
-  // Add observation noise to posterior predictive model output.
+  // Add observation noise to posterior predictive model output to obtain posterior predictive samples.
   for (i in 1:state_dim) {
     y_hat_post_pred[i,] = normal_rng(x_hat_post_pred[i,], obs_error_scale * x_hat_post_pred[i,]);
   }
-  print("Posterior predictive ODE output: ", y_hat_post_pred);  
+  print("Iteration posterior predictive y observation: ", y_hat_post_pred);
+
+  // Obtain prior predictive samples. 
   real u_Q_ref_prior_pred = normal_lb_ub_rng(u_Q_ref_prior_dist_params[1], u_Q_ref_prior_dist_params[1] * prior_scale_factor, u_Q_ref_prior_dist_params[2], u_Q_ref_prior_dist_params[3]);
   real Q_prior_pred = normal_lb_ub_rng(Q_prior_dist_params[1], Q_prior_dist_params[1] * prior_scale_factor, Q_prior_dist_params[2], Q_prior_dist_params[3]);
   real a_MSA_prior_pred = normal_lb_ub_rng(a_MSA_prior_dist_params[1], a_MSA_prior_dist_params[1] * prior_scale_factor, a_MSA_prior_dist_params[2], a_MSA_prior_dist_params[3]);
