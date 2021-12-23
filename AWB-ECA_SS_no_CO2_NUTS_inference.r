@@ -1,6 +1,7 @@
 library(cmdstanr)
 library(posterior)
 library(bayesplot)
+library(tidyverse)
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -68,4 +69,4 @@ lines <- readLines(file_path, encoding = "ASCII")
 for (n in 1:length(lines)) cat(lines[n],'\n')
 model <- cmdstan_model(file_path)
 
-AWB_ECA_stan_fit <- model$sample(data = data_list, iter = 1000, warmup = 500, refresh = 10, chains = 3, seed = 123)
+AWB_ECA_stan_fit <- model$sample(data = data_list, iter_sampling = 1000, iter_warmup = 500, refresh = 10, chains = 3, seed = 123)

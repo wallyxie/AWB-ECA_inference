@@ -181,6 +181,7 @@ generated quantities {
       x_hat_post_pred[j, i] = x_hat_post_pred_intmd[i, j];
     }
   }
+  // Add observation noise to posterior predictive model output.
   for (i in 1:state_dim) {
     y_hat_post_pred[i,] = normal_rng(x_hat_post_pred[i,], obs_error_scale * x_hat_post_pred[i,]);
   }
