@@ -83,7 +83,6 @@ functions {
     dCdt[2] = i_d + (1 - a_MSA) * r_M * C[3] + F_S + r_L * C[4] - F_D;
     dCdt[3] = u_Q * F_D * - (r_M + r_E) * C[3];
     dCdt[4] = r_E * C[3] - r_L * C[4];
-
     return dCdt;
   }
 
@@ -106,18 +105,19 @@ data {
   real<lower=0> prior_scale_factor; // Factor multiplying parameter means to obtain prior standard deviations.
   real<lower=0> obs_error_scale; // Observation noise factor multiplying observations of model output x_hat.
   vector<lower=0>[state_dim] x_hat0; // Initial ODE conditions.
-  real<lower=0> u_Q_ref_mean;
-  real<lower=0> Q_mean;
-  real<lower=0> a_MSA_mean;
-  real<lower=0> K_DE_mean;
-  real<lower=0> K_UE_mean;
-  real<lower=0> V_DE_ref_mean;
-  real<lower=0> V_UE_ref_mean;
-  real<lower=0> Ea_V_DE_mean;
-  real<lower=0> Ea_V_UE_mean;
-  real<lower=0> r_M_mean;
-  real<lower=0> r_E_mean;
-  real<lower=0> r_L_mean;
+  // [1] is prior mean, [2] is prior lower bound, [3] is prior upper bound.
+  array[3] real<lower=0> u_Q_ref_prior_dist_params;
+  array[3] real<lower=0> Q_prior_dist_params;
+  array[3] real<lower=0> a_MSA_prior_dist_params;
+  array[3] real<lower=0> K_DE_prior_dist_params;
+  array[3] real<lower=0> K_UE_prior_dist_params;
+  array[3] real<lower=0> V_DE_ref_prior_dist_params;
+  array[3] real<lower=0> V_UE_ref_prior_dist_params;
+  array[3] real<lower=0> Ea_V_DE_prior_dist_params;
+  array[3] real<lower=0> Ea_V_UE_prior_dist_params;
+  array[3] real<lower=0> r_M_prior_dist_params;
+  array[3] real<lower=0> r_E_prior_dist_params;
+  array[3] real<lower=0> r_L_prior_dist_params;
 }
 
 transformed data {
@@ -125,18 +125,18 @@ transformed data {
 }
 
 parameters {
-  real<lower=0> u_Q_ref; // Reference carbon use efficiency.
-  real<lower=0> Q; // Carbon use efficiency linear dependence negative slope.
-  real<lower=0> a_MSA; // AWB MBC-to-SOC transfer fraction.
-  real<lower=0> K_DE; // SOC decomposition K_m.
-  real<lower=0> K_UE; // DOC uptake K_m.
-  real<lower=0> V_DE_ref; // Reference SOC decomposition V_max.
-  real<lower=0> V_UE_ref; // Reference DOC uptake V_max.
-  real<lower=0> Ea_V_DE; // SOC V_max activation energy.
-  real<lower=0> Ea_V_UE; // DOC V_max activation energy.
-  real<lower=0> r_M; // MBC turnover rate.
-  real<lower=0> r_E; // Enzyme production rate.
-  real<lower=0> r_L; // Enzyme loss rate.
+  real<lower = u_Q_ref_prior_dist_params[2], upper = u_Q_ref_prior_dist_params[3]> u_Q_ref; // Reference carbon use efficiency.
+  real<lower = Q_prior_dist_params[2], upper = Q_prior_dist_params[3]> Q; // Carbon use efficiency linear dependence negative slope.
+  real<lower = a_MSA_prior_dist_params[2], upper = a_MSA_prior_dist_params[3]> a_MSA; // AWB MBC-to-SOC transfer fraction.
+  real<lower = K_DE_prior_dist_params[2], upper = K_DE_prior_dist_params[3]> K_DE; // SOC decomposition K_m.
+  real<lower = K_UE_prior_dist_params[2], upper = K_UE_prior_dist_params[3]> K_UE; // DOC uptake K_m.
+  real<lower = V_DE_ref_prior_dist_params[2], upper = V_DE_ref_prior_dist_params[3]> V_DE_ref; // Reference SOC decomposition V_max.
+  real<lower = V_UE_ref_prior_dist_params[2], upper = V_UE_ref_prior_dist_params[3]> V_UE_ref; // Reference DOC uptake V_max.
+  real<lower = Ea_V_DE_prior_dist_params[2], upper = Ea_V_DE_prior_dist_params[3]> Ea_V_DE; // SOC V_max activation energy.
+  real<lower = Ea_V_UE_prior_dist_params[2], upper = Ea_V_UE_prior_dist_params[3]> Ea_V_UE; // DOC V_max activation energy.
+  real<lower = r_M_prior_dist_params[2], upper = r_M_prior_dist_params[3]> r_M; // MBC turnover rate.
+  real<lower = r_E_prior_dist_params[2], upper = r_E_prior_dist_params[3]> r_E; // Enzyme production rate.
+  real<lower = r_L_prior_dist_params[2], upper = r_L_prior_dist_params[3]> r_L; // Enzyme loss rate.
 }
 
 transformed parameters {
@@ -151,18 +151,18 @@ transformed parameters {
 }
 
 model {
-  u_Q_ref ~ normal(u_Q_ref_mean, u_Q_ref_mean * prior_scale_factor) T[0, 1];
-  Q ~ normal(Q_mean, Q_mean * prior_scale_factor) T[0, 0.1];
-  a_MSA ~ normal(a_MSA_mean, a_MSA_mean * prior_scale_factor) T[0, 1];
-  K_DE ~ normal(K_DE_mean, K_DE_mean * prior_scale_factor) T[0, 5000];
-  K_UE ~ normal(K_UE_mean, K_UE_mean * prior_scale_factor) T[0, 1];
-  V_DE_ref ~ normal(V_DE_ref_mean, V_DE_ref_mean * prior_scale_factor) T[0, 1];
-  V_UE_ref ~ normal(V_UE_ref_mean, V_UE_ref_mean * prior_scale_factor) T[0, 0.1];
-  Ea_V_DE ~ normal(Ea_V_DE_mean, Ea_V_DE_mean * prior_scale_factor) T[5, 80];
-  Ea_V_UE ~ normal(Ea_V_UE_mean, Ea_V_UE_mean * prior_scale_factor) T[5, 80];
-  r_M ~ normal(r_M_mean, r_M_mean * prior_scale_factor) T[0, 0.1];
-  r_E ~ normal(r_E_mean, r_E_mean * prior_scale_factor) T[0, 0.1];
-  r_L ~ normal(r_L_mean, r_L_mean * prior_scale_factor) T[0, 0.1];
+  u_Q_ref ~ normal(u_Q_ref_prior_dist_params[1], u_Q_ref_prior_dist_params[1] * prior_scale_factor) T[u_Q_ref_prior_dist_params[2], u_Q_ref_prior_dist_params[3]];
+  Q ~ normal(Q_prior_dist_params[1], Q_prior_dist_params[1] * prior_scale_factor) T[Q_prior_dist_params[2], Q_prior_dist_params[3]];
+  a_MSA ~ normal(a_MSA_prior_dist_params[1], a_MSA_prior_dist_params[1] * prior_scale_factor) T[a_MSA_prior_dist_params[2], a_MSA_prior_dist_params[3]];
+  K_DE ~ normal(K_DE_prior_dist_params[1], K_DE_prior_dist_params[1] * prior_scale_factor) T[K_DE_prior_dist_params[2], K_DE_prior_dist_params[3]];
+  K_UE ~ normal(K_UE_prior_dist_params[1], K_UE_prior_dist_params[1] * prior_scale_factor) T[K_UE_prior_dist_params[2], K_UE_prior_dist_params[3]];
+  V_DE_ref ~ normal(V_DE_ref_prior_dist_params[1], V_DE_ref_prior_dist_params[1] * prior_scale_factor) T[V_DE_ref_prior_dist_params[2], V_DE_ref_prior_dist_params[3]];
+  V_UE_ref ~ normal(V_UE_ref_prior_dist_params[1], V_UE_ref_prior_dist_params[1] * prior_scale_factor) T[V_UE_ref_prior_dist_params[2], V_UE_ref_prior_dist_params[3]];
+  Ea_V_DE ~ normal(Ea_V_DE_prior_dist_params[1], Ea_V_DE_prior_dist_params[1] * prior_scale_factor) T[Ea_V_DE_prior_dist_params[2], Ea_V_DE_prior_dist_params[3]];
+  Ea_V_UE ~ normal(Ea_V_UE_prior_dist_params[1], Ea_V_UE_prior_dist_params[1] * prior_scale_factor) T[Ea_V_UE_prior_dist_params[2], Ea_V_UE_prior_dist_params[3]];
+  r_M ~ normal(r_M_prior_dist_params[1], r_M_prior_dist_params[1] * prior_scale_factor) T[r_M_prior_dist_params[2], r_M_prior_dist_params[3]];
+  r_E ~ normal(r_E_prior_dist_params[1], r_E_prior_dist_params[1] * prior_scale_factor) T[r_E_prior_dist_params[2], r_E_prior_dist_params[3]];
+  r_L ~ normal(r_L_prior_dist_params[1], r_L_prior_dist_params[1] * prior_scale_factor) T[r_L_prior_dist_params[2], r_L_prior_dist_params[3]];
 
   // Likelihood evaluation.
   for (i in 1:state_dim) {
@@ -171,9 +171,10 @@ model {
 }
 
 generated quantities {
-  array[N_t] vector<lower=0>[state_dim] x_hat_post_pred;
-  array[state_dim] vector<lower=0>[N_t] x_hat_post_pred_intmd;  
-  array[N_t, state_dim] real<lower=0> y_hat_post_pred;
+    print("Sampled theta values: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
+  array[N_t] vector<lower=0>[state_dim] x_hat_post_pred_intmd;
+  array[state_dim] vector<lower=0>[N_t] x_hat_post_pred;  
+  array[state_dim, N_t] real<lower=0> y_hat_post_pred;
   x_hat_post_pred_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
   // Transform posterior predictive model output to match observations y in dimensions, [state_dim, N_t].
   for (i in 1:N_t) {
@@ -185,16 +186,17 @@ generated quantities {
   for (i in 1:state_dim) {
     y_hat_post_pred[i,] = normal_rng(x_hat_post_pred[i,], obs_error_scale * x_hat_post_pred[i,]);
   }
-  real u_Q_ref_post = normal_lb_ub_rng(u_Q_ref_mean, u_Q_ref_mean * prior_scale_factor, 0, 1);
-  real Q_post = normal_lb_ub_rng(Q_mean, Q_mean * prior_scale_factor, 0, 0.1);
-  real a_MSA_post = normal_lb_ub_rng(a_MSA_mean, a_MSA_mean * prior_scale_factor, 0, 1);
-  real K_DE_post = normal_lb_ub_rng(K_DE_mean, K_DE_mean * prior_scale_factor, 0, 5000);
-  real K_UE_post = normal_lb_ub_rng(K_UE_mean, K_UE_mean * prior_scale_factor, 0, 1);
-  real V_DE_ref_post = normal_lb_ub_rng(V_DE_ref_mean, V_DE_ref_mean * prior_scale_factor, 0, 1);
-  real V_UE_ref_post = normal_lb_ub_rng(V_UE_ref_mean, V_UE_ref_mean * prior_scale_factor, 0, 0.1);
-  real Ea_V_DE_post = normal_lb_ub_rng(Ea_V_DE_mean, Ea_V_DE_mean * prior_scale_factor, 5, 80);
-  real Ea_V_UE_post = normal_lb_ub_rng(Ea_V_UE_mean, Ea_V_UE_mean * prior_scale_factor, 5, 80);
-  real r_M_post = normal_lb_ub_rng(r_M_mean, r_M_mean * prior_scale_factor, 0, 0.1);
-  real r_E_post = normal_lb_ub_rng(r_E_mean, r_E_mean * prior_scale_factor, 0, 0.1);
-  real r_L_post = normal_lb_ub_rng(r_L_mean, r_L_mean * prior_scale_factor, 0, 0.1);
+  print("Posterior predictive ODE output: ", y_hat_post_pred);  
+  real u_Q_ref_prior_pred = normal_lb_ub_rng(u_Q_ref_prior_dist_params[1], u_Q_ref_prior_dist_params[1] * prior_scale_factor, u_Q_ref_prior_dist_params[2], u_Q_ref_prior_dist_params[3]);
+  real Q_prior_pred = normal_lb_ub_rng(Q_prior_dist_params[1], Q_prior_dist_params[1] * prior_scale_factor, Q_prior_dist_params[2], Q_prior_dist_params[3]);
+  real a_MSA_prior_pred = normal_lb_ub_rng(a_MSA_prior_dist_params[1], a_MSA_prior_dist_params[1] * prior_scale_factor, a_MSA_prior_dist_params[2], a_MSA_prior_dist_params[3]);
+  real K_DE_prior_pred = normal_lb_ub_rng(K_DE_prior_dist_params[1], K_DE_prior_dist_params[1] * prior_scale_factor, K_DE_prior_dist_params[2], K_DE_prior_dist_params[3]);
+  real K_UE_prior_pred = normal_lb_ub_rng(K_UE_prior_dist_params[1], K_UE_prior_dist_params[1] * prior_scale_factor, K_UE_prior_dist_params[2], K_UE_prior_dist_params[3]);
+  real V_DE_ref_prior_pred = normal_lb_ub_rng(V_DE_ref_prior_dist_params[1], V_DE_ref_prior_dist_params[1] * prior_scale_factor, V_DE_ref_prior_dist_params[2], V_DE_ref_prior_dist_params[3]);
+  real V_UE_ref_prior_pred = normal_lb_ub_rng(V_UE_ref_prior_dist_params[1], V_UE_ref_prior_dist_params[1] * prior_scale_factor, V_UE_ref_prior_dist_params[2], V_UE_ref_prior_dist_params[3]);
+  real Ea_V_DE_prior_pred = normal_lb_ub_rng(Ea_V_DE_prior_dist_params[1], Ea_V_DE_prior_dist_params[1] * prior_scale_factor, Ea_V_DE_prior_dist_params[2], Ea_V_DE_prior_dist_params[3]);
+  real Ea_V_UE_prior_pred = normal_lb_ub_rng(Ea_V_UE_prior_dist_params[1], Ea_V_UE_prior_dist_params[1] * prior_scale_factor, Ea_V_UE_prior_dist_params[2], Ea_V_UE_prior_dist_params[3]);
+  real r_M_prior_pred = normal_lb_ub_rng(r_M_prior_dist_params[1], r_M_prior_dist_params[1] * prior_scale_factor, r_M_prior_dist_params[2], r_M_prior_dist_params[3]);
+  real r_E_prior_pred = normal_lb_ub_rng(r_E_prior_dist_params[1], r_E_prior_dist_params[1] * prior_scale_factor, r_E_prior_dist_params[2], r_E_prior_dist_params[3]);
+  real r_L_prior_pred = normal_lb_ub_rng(r_L_prior_dist_params[1], r_L_prior_dist_params[1] * prior_scale_factor, r_L_prior_dist_params[2], r_L_prior_dist_params[3]);
 }
