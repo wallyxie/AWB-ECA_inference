@@ -100,7 +100,7 @@ data {
   int<lower=1> state_dim; // Number of state dimensions (4 for AWB).
   int<lower=1> N_t; // Number of observations.
   array[N_t] real<lower=0> ts; // Univariate array of observation time steps.
-  array[N_t] vector<lower=0>[state_dim] y; // Multidimensional array of state observations bounded at 0.
+  array[state_dim] vector<lower=0>[N_t] y; // Multidimensional array of state observations bounded at 0. y in [state_dim, N_t] shape to facilitate likelihood sampling.
   real<lower=0> temp_ref; // Reference temperature for temperature forcing.
   real<lower=0> temp_rise; // Assumed increase in temperature (°C/K) over next 80 years.
   real<lower=0> prior_scale_factor; // Factor multiplying parameter means to obtain prior standard deviations.
@@ -122,7 +122,6 @@ data {
 
 transformed data {
   real t0 = 0; // Initial time.
-  //Reshape y here.
 }
 
 parameters {
@@ -141,8 +140,14 @@ parameters {
 }
 
 transformed parameters {
-  array[N_t] vector<lower=0>[state_dim] x_hat = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); 
-  //Reshape x_hat here.
+  array[N_t] vector<lower=0>[state_dim] x_hat_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
+  // Transform model output to match observations y in shape, [state_dim, N_t].
+  array[state_dim] vector<lower=0>[N_t] x_hat;
+  for (i in 1:N_t) {
+    for (j in 1:state_dim) {
+      x_hat[j, i] = x_hat_intmd[i, j];
+    }
+  }
 }
 
 model {
@@ -160,15 +165,25 @@ model {
   r_L ~ normal(r_L_mean, r_L_mean * prior_scale_factor) T[0, 0.1];
 
   // Likelihood evaluation.
-  // melt y and x_hat.
-  y ~ normal(x_hat, obs_error_scale * x_hat);
+  for (i in 1:state_dim) {
+    y[i,] ~ normal(x_hat[i,], obs_error_scale * x_hat[i,]);
+  }
 }
 
 generated quantities {
   array[N_t] vector<lower=0>[state_dim] x_hat_post_pred;
-  array[N_t] vector<lower=0>[state_dim] y_hat_post_pred;
-  x_hat_post_pred = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L);
-  y_hat_post_pred = normal_rng(x_hat_post_pred, obs_error_scale * x_hat_post_pred);
+  array[state_dim] vector<lower=0>[N_t] x_hat_post_pred_intmd;  
+  array[N_t, state_dim] real<lower=0> y_hat_post_pred;
+  x_hat_post_pred_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
+  // Transform posterior predictive model output to match observations y in dimensions, [state_dim, N_t].
+  for (i in 1:N_t) {
+    for (j in 1:state_dim) {
+      x_hat_post_pred[j, i] = x_hat_post_pred_intmd[i, j];
+    }
+  }
+  for (i in 1:state_dim) {
+    y_hat_post_pred[i,] = normal_rng(x_hat_post_pred[i,], obs_error_scale * x_hat_post_pred[i,]);
+  }
   real u_Q_ref_post = normal_lb_ub_rng(u_Q_ref_mean, u_Q_ref_mean * prior_scale_factor, 0, 1);
   real Q_post = normal_lb_ub_rng(Q_mean, Q_mean * prior_scale_factor, 0, 0.1);
   real a_MSA_post = normal_lb_ub_rng(a_MSA_mean, a_MSA_mean * prior_scale_factor, 0, 1);
