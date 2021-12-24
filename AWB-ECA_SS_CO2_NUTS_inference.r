@@ -1,12 +1,9 @@
 library(cmdstanr)
 library(posterior)
-library(bayesplot)
 library(tidyverse)
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
-
-color_scheme_set("viridisA")
 
 #Data to be passed to Stan.
 state_dim <- 4
