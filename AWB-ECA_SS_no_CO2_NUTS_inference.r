@@ -15,9 +15,8 @@ temp_rise <- 5 #High estimate of 5 celsius temperature rise by 2100.
 prior_scale_factor <- 0.25
 obs_error_scale <- 0.1
 obs_every <- 10 #Observations every 10 hours.
-t <- 2000 #Total time span of ODE simulation.
-dt <- 0.1 #Euler time step size corresponding to data generation. 
-x_hat0 <- c(78.81405796, 5.66343552, 2.2209765, 1.19214226) #Originally sampled values used for Euler-Maruyama solution.
+t <- 3000 #Total time span of ODE simulation.
+x_hat0 <- c(78.80557523, 2.83158185, 2.22155509, 1.19246832) #Originally sampled values used for Euler-Maruyama solution.
 y_full <- read_csv('generated_data/SAWB-ECA-SS_no_CO2_trunc_short_2021_12_20_18_20_sample_y_t_2000_dt_0-01_sd_scale_0-25.csv')
 y <- y_full %>% filter(hour <= t) %>% tail(-1)
 ts <- y$hour
