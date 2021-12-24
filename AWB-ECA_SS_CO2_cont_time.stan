@@ -109,7 +109,7 @@ functions {
     vector[N_t] temp_vec;
     array[1] vector[N_t] CO2;
     
-    temp_vec = to_vector(temp_func(ts, temp_ref, temp_rise))
+    temp_vec = to_vector(temp_func(ts, temp_ref, temp_rise));
     u_Q = linear_temp_vec(u_Q_ref, temp_vec, Q, temp_ref);
     V_UE = arrhenius_temp_vec(V_UE_ref, temp_vec, Ea_V_UE, temp_ref);
   
