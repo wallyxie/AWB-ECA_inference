@@ -40,6 +40,23 @@ r_M_prior_dist_params <- c(0.0001667, 0, 0.1)
 r_E_prior_dist_params <- c(0.0002, 0, 0.1)
 r_L_prior_dist_params <- c(0.0004, 0, 0.1)
 
+#Create list of lists to pass prior means as initial theta values in Stan corresponding to four chains.
+init_theta_single = list(
+                  u_Q_ref = u_Q_ref_prior_dist_params[1],
+                  Q = Q_prior_dist_params[1],
+                  a_MSA = a_MSA_prior_dist_params[1],
+                  K_DE = K_DE_prior_dist_params[1],
+                  K_UE = K_UE_prior_dist_params[1],
+                  V_DE_ref = V_DE_ref_prior_dist_params[1],
+                  V_UE_ref = V_UE_ref_prior_dist_params[1],
+                  Ea_V_DE = Ea_V_DE_prior_dist_params[1],
+                  Ea_V_UE = Ea_V_UE_prior_dist_params[1],
+                  r_M = r_M_prior_dist_params[1],
+                  r_E = r_E_prior_dist_params[1],
+                  r_L = r_L_prior_dist_params[1]
+                  )
+init_theta = list(init_theta_single)[rep(1, 4)]
+
 data_list = list(
     state_dim = state_dim,
     N_t = N_t,
@@ -69,4 +86,4 @@ lines <- readLines(file_path, encoding = "ASCII")
 for (n in 1:length(lines)) cat(lines[n],'\n')
 model <- cmdstan_model(file_path)
 
-AWB_ECA_stan_fit <- model$sample(data = data_list, iter_sampling = 5000, iter_warmup = 2500, refresh = 10, chains = 4, parallel_chains = 4, seed = 5678, adapt_delta = 0.95)
+AWB_ECA_stan_fit <- model$sample(data = data_list, seed = 1234, refresh = 20, init = init_theta, iter_sampling = 7500, iter_warmup = 1100, chains = 4, parallel_chains = 4, adapt_delta = 0.95)
