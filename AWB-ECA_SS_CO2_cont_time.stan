@@ -205,7 +205,7 @@ transformed parameters {
   
   //print("Leapfrog x: ", x_hat);
   //print("Leapfrog CO2: ", x_hat_CO2);
-  print("Leapfrog x add CO2: ", x_hat_add_CO2);  
+  //print("Leapfrog x add CO2: ", x_hat_add_CO2);  
 }
 
 model {
