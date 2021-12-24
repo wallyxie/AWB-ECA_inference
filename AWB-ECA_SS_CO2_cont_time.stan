@@ -141,7 +141,7 @@ data {
   int<lower=1> state_dim; // Number of state dimensions (4 for AWB).
   int<lower=1> N_t; // Number of observations.
   array[N_t] real<lower=0> ts; // Univariate array of observation time steps.
-  array[state_dim + 1] vector<lower=0>[N_t] y; // Multidimensional array of state observations and CO2 bounded at 0. y in [state_dim, N_t] shape to facilitate likelihood sampling.
+  array[state_dim+1] vector<lower=0>[N_t] y; // Multidimensional array of state observations and CO2 bounded at 0. y in [state_dim, N_t] shape to facilitate likelihood sampling.
   real<lower=0> temp_ref; // Reference temperature for temperature forcing.
   real<lower=0> temp_rise; // Assumed increase in temperature (°C/K) over next 80 years.
   real<lower=0> prior_scale_factor; // Factor multiplying parameter means to obtain prior standard deviations.
@@ -183,7 +183,7 @@ parameters {
 
 transformed parameters {
   vector<lower=0>[N_t] x_hat_CO2;
-  array[state_dim + 1] vector<lower=0>[N_t] x_hat_add_CO2;
+  array[state_dim+1] vector<lower=0>[N_t] x_hat_add_CO2;
 
   // Solve ODE.
   array[N_t] vector<lower=0>[state_dim] x_hat_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
