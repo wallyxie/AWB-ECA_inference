@@ -233,8 +233,8 @@ generated quantities {
   array[N_t] vector<lower=0>[state_dim] x_hat_post_pred_intmd;
   array[state_dim] vector<lower=0>[N_t] x_hat_post_pred;
   vector<lower=0>[N_t] x_hat_post_pred_CO2;
-  array[state_dim + 1] vector<lower=0>[N_t] x_hat_post_pred_add_CO2;
-  array[state_dim, N_t] real<lower=0> y_hat_post_pred;
+  array[state_dim+1] vector<lower=0>[N_t] x_hat_post_pred_add_CO2;
+  array[state_dim+1, N_t] real<lower=0> y_hat_post_pred;
 
   print("Iteration theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
 
