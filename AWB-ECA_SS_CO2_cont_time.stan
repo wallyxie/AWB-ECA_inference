@@ -5,6 +5,10 @@ functions {
     return temp_ref + (temp_rise * t) / (80 * 24 * 365) + 10 * sin((2 * pi() / 24) * t) + 10 * sin((2 * pi() / (24 * 365)) * t);
   }
 
+  vector temp_func_vec(vector ts, real temp_ref, real temp_rise) {
+    return temp_ref + (temp_rise * ts) / (80 * 24 * 365) + 10 * sin((2 * pi() / 24) * ts) + 10 * sin((2 * pi() / (24 * 365)) * ts);
+  }
+
   // Exogenous SOC input function.
   real i_s_func(real t) {
     return 0.001 + 0.0005 * sin((2 * pi() / (24 * 365)) * t);
@@ -20,8 +24,8 @@ functions {
     return input * exp(-Ea / 0.008314 * (1 / temp - 1 / temp_ref));
   }
 
-  real arrhenius_temp_vec(real input, vector temp, real Ea, real temp_ref) {
-    return input * exp(-Ea / 0.008314 * (1 / temp - 1 / temp_ref));
+  vector arrhenius_temp_vec(real input, vector temps, real Ea, real temp_ref) {
+    return input * exp(-Ea / 0.008314 * (1 ./ temps - 1 ./ temp_ref));
   }
 
   // Function for enforcing linear temperature dependency of ODE parameter.
@@ -29,8 +33,8 @@ functions {
     return input - Q * (temp - temp_ref);
   }
 
-  real linear_temp_vec(real input, vector temp, real Q, real temp_ref) {
-    return input - Q * (temp - temp_ref);
+  vector linear_temp_vec(real input, vector temps, real Q, real temp_ref) {
+    return input - Q * (temps - temp_ref);
   }
 
   /*
@@ -95,8 +99,8 @@ functions {
   }
 
   // Calculate model output CO2 observations from states x.
-  vector calc_AWB_ECA_CO2(real ts,
-                          vector C,
+  vector calc_AWB_ECA_CO2(real[] ts,
+                          array[] vector C,
                           real u_Q_ref, // Reference carbon use efficiency.
                           real Q, // Carbon use efficiency linear dependence negative slope.
                           real K_UE, // DOC uptake K_m.
@@ -104,16 +108,24 @@ functions {
                           real Ea_V_UE, // DOC V_max activation energy.
                           real temp_ref,
                           real temp_rise) {
-    vector[N_t] u_Q;
-    vector[N_t] V_UE;
-    vector[N_t] temp_vec;
-    array[1] vector[N_t] CO2;
     
-    temp_vec = to_vector(temp_func(ts, temp_ref, temp_rise));
+    vector[size(ts)] ts_vec;
+    vector[size(ts)] u_Q;
+    vector[size(ts)] V_UE;
+    vector[size(ts)] temp_vec;
+    vector[size(ts)] CO2;
+    
+    ts_vec = to_vector(ts);
+    //print("ts_vec", ts_vec);
+    temp_vec = temp_func_vec(ts_vec, temp_ref, temp_rise);
+    //print("temp_vec", temp_vec);
     u_Q = linear_temp_vec(u_Q_ref, temp_vec, Q, temp_ref);
+    //print("u_Q", u_Q);
     V_UE = arrhenius_temp_vec(V_UE_ref, temp_vec, Ea_V_UE, temp_ref);
+    //print("V_UE", V_UE);
+    CO2 = (1 - u_Q) .* (V_UE .* C[3,] .* C[2,]) ./ (K_UE + C[3,] + C[2,]);
   
-    return CO2[1,] = (1 - u_Q) * (V_UE * C[3,] * C[2,]) / (K_UE + C[3,] + C[2,]);    
+    return CO2;    
   }
 
   // From https://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/12.
@@ -170,11 +182,11 @@ parameters {
 }
 
 transformed parameters {
-  array[1] vector<lower=0>][N_t] x_hat_CO2;
+  vector<lower=0>[N_t] x_hat_CO2;
   array[state_dim + 1] vector<lower=0>[N_t] x_hat_add_CO2;
 
   // Solve ODE.
-  array[N_t] vector<lower=0>[state_dim] x_hat_intmd = ode_rk45(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
+  array[N_t] vector<lower=0>[state_dim] x_hat_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
 
   // Transform model output to match observations y in shape, [state_dim, N_t].
   array[state_dim] vector<lower=0>[N_t] x_hat;
@@ -187,10 +199,13 @@ transformed parameters {
   // Compute CO2.
   x_hat_CO2 = calc_AWB_ECA_CO2(ts, x_hat, u_Q_ref, Q, K_UE, V_UE_ref, Ea_V_UE, temp_ref, temp_rise);   
 
-  // Append CO2 to x_hat.
-  x_hat_add_CO2 = append_array(x_hat, x_hat_add_CO2);
+  // Add CO2 vector to x_hat.
+  x_hat_add_CO2[1:4,] = x_hat;
+  x_hat_add_CO2[5,] = x_hat_CO2;
   
   //print("Leapfrog x: ", x_hat);
+  //print("Leapfrog CO2: ", x_hat_CO2);
+  print("Leapfrog x add CO2: ", x_hat_add_CO2);  
 }
 
 model {
@@ -206,7 +221,7 @@ model {
   r_M ~ normal(r_M_prior_dist_params[1], r_M_prior_dist_params[1] * prior_scale_factor) T[r_M_prior_dist_params[2], r_M_prior_dist_params[3]];
   r_E ~ normal(r_E_prior_dist_params[1], r_E_prior_dist_params[1] * prior_scale_factor) T[r_E_prior_dist_params[2], r_E_prior_dist_params[3]];
   r_L ~ normal(r_L_prior_dist_params[1], r_L_prior_dist_params[1] * prior_scale_factor) T[r_L_prior_dist_params[2], r_L_prior_dist_params[3]];
-  //print("Leapfrog theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
+  print("Leapfrog theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
 
   // Likelihood evaluation.
   for (i in 1:state_dim+1) {
@@ -217,13 +232,13 @@ model {
 generated quantities {
   array[N_t] vector<lower=0>[state_dim] x_hat_post_pred_intmd;
   array[state_dim] vector<lower=0>[N_t] x_hat_post_pred;
-  array[1] vector<lower=0>][N_t] x_hat_post_pred_CO2;
+  vector<lower=0>[N_t] x_hat_post_pred_CO2;
   array[state_dim + 1] vector<lower=0>[N_t] x_hat_post_pred_add_CO2;
   array[state_dim, N_t] real<lower=0> y_hat_post_pred;
 
   print("Iteration theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
 
-  x_hat_post_pred_intmd = ode_rk45(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
+  x_hat_post_pred_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
   // Transform posterior predictive model output to match observations y in dimensions, [state_dim, N_t].
   for (i in 1:N_t) {
     for (j in 1:state_dim) {
@@ -234,8 +249,9 @@ generated quantities {
   // Compute posterior predictive CO2.
   x_hat_post_pred_CO2 = calc_AWB_ECA_CO2(ts, x_hat_post_pred, u_Q_ref, Q, K_UE, V_UE_ref, Ea_V_UE, temp_ref, temp_rise);   
 
-  // Append CO2 to posterior predictive x_hat.
-  x_hat_post_pred_add_CO2 = append_array(x_hat_post_pred, x_hat_post_pred_add_CO2);
+  // Append CO2 vector to posterior predictive x_hat.
+  x_hat_post_pred_add_CO2[1:4,] = x_hat_post_pred;
+  x_hat_post_pred_add_CO2[5,] = x_hat_post_pred_CO2;
 
   // Add observation noise to posterior predictive model output to obtain posterior predictive samples.
   for (i in 1:state_dim+1) {
