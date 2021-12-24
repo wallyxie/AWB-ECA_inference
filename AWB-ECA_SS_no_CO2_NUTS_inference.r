@@ -26,7 +26,7 @@ y <- y %>% select(-hour)
 y <- as.list(y) #Convert data observations to list of columns to correspond to Stan's array of vectors type.
 
 #Parameter prior means
-u_Q_ref_prior_dist_params <- c(0.22, 0, 1)
+u_Q_ref_prior_dist_params <- c(0.22, 1e-2, 1)
 Q_prior_dist_params <- c(0.001, 0, 0.1)
 a_MSA_prior_dist_params <- c(0.5, 0, 1)
 K_DE_prior_dist_params <- c(1000, 100, 5000)
