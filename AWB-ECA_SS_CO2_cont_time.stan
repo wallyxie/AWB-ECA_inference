@@ -95,7 +95,7 @@ functions {
   }
 
   // Calculate model output CO2 observations from states x.
-  vector calc AWB_ECA_CO2(real ts,
+  vector calc_AWB_ECA_CO2(real ts,
                           vector C,
                           real u_Q_ref, // Reference carbon use efficiency.
                           real Q, // Carbon use efficiency linear dependence negative slope.
