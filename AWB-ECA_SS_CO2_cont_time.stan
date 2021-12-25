@@ -93,7 +93,7 @@ functions {
     // Compute derivatives.
     dCdt[1] = i_s + a_MSA * r_M * C[3] - F_S;
     dCdt[2] = i_d + (1 - a_MSA) * r_M * C[3] + F_S + r_L * C[4] - F_D;
-    dCdt[3] = u_Q * F_D * - (r_M + r_E) * C[3];
+    dCdt[3] = u_Q * F_D - (r_M + r_E) * C[3];
     dCdt[4] = r_E * C[3] - r_L * C[4];
     return dCdt;
   }
