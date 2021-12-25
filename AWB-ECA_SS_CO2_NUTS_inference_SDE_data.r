@@ -83,4 +83,4 @@ lines <- readLines(file_path, encoding = "ASCII")
 for (n in 1:length(lines)) cat(lines[n],'\n')
 model <- cmdstan_model(file_path)
 
-AWB_ECA_stan_fit <- model$sample(data = data_list, seed = 1234, refresh = 10, init = init_theta, iter_sampling = 5000, iter_warmup = 1000, chains = 4, parallel_chains = 4, adapt_delta = 0.95)
+AWB_ECA_stan_fit <- model$sample(data = data_list, seed = 1234, refresh = 50, init = init_theta, iter_sampling = 6250, iter_warmup = 1000, chains = 4, parallel_chains = 4, adapt_delta = 0.95)
