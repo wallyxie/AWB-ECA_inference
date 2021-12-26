@@ -11,3 +11,5 @@
 AWB-ECA_SS_no_CO2_cont_time
 AWB-ECA_SS_CO2_cont_time
 *.RDS
+*_test
+*.csv
