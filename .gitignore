@@ -8,8 +8,8 @@
 .Rhistory
 *.tmp
 *.o
-AWB-ECA_SS_no_CO2_cont_time
-AWB-ECA_SS_CO2_cont_time
+AWB-ECA_no_CO2_cont_time
+AWB-ECA_CO2_cont_time
 *.RDS
 *.csv
-AWB-ECA-SS_det_test.ipynb
+AWB-ECA_det_test.ipynb
