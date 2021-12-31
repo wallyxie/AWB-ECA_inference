@@ -87,7 +87,7 @@ AWB_ECA_stan_fit_CO2 <- model$sample(data = data_list, seed = 1234, refresh = 10
 
 #Save Stan fit object and NUTS inference results.
 AWB_ECA_stan_fit_CO2$save_object(file = "AWB-ECA_SS_CO2_NUTS_inference_SDE_data.rds")
-AWB_ECA_stan_fit_CO2_post <- as.tibble(AWB_ECA_stan_fit_CO2$draws(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L")))
+AWB_ECA_stan_fit_CO2_post <- as_tibble(AWB_ECA_stan_fit_CO2$draws(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L")))
 write_csv(AWB_ECA_stan_fit_CO2_post, "AWB-ECA_SS_CO2_NUTS_inference_SDE_data_post.csv")
 AWB_ECA_stan_fit_CO2_post_pred <- as_tibble(AWB_ECA_stan_fit_CO2$draws("y_hat_post_pred"))
 write_csv(AWB_ECA_stan_fit_CO2_post_pred, "AWB-ECA_SS_CO2_NUTS_inference_SDE_data_post_pred.csv")
