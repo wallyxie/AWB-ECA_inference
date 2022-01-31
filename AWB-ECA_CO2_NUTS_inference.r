@@ -6,6 +6,8 @@ library(bayesplot)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
+num_chains <- 4
+
 #Data to be passed to Stan.
 state_dim <- 4
 temp_ref <- 283
@@ -52,7 +54,7 @@ init_theta_single = list(
                   r_E = r_E_prior_dist_params[1],
                   r_L = r_L_prior_dist_params[1]
                   )
-init_theta = list(init_theta_single)[rep(1, 4)]
+init_theta = list(init_theta_single)[rep(1, num_chains)] #num_chains copies of initial theta proposals for each of the HMC chains to be used.
 
 data_list = list(
     state_dim = state_dim,
@@ -83,4 +85,4 @@ lines <- readLines(file_path, encoding = "ASCII")
 for (n in 1:length(lines)) cat(lines[n],'\n')
 model <- cmdstan_model(file_path)
 
-AWB_ECA_stan_fit <- model$sample(data = data_list, seed = 1234, refresh = 10, init = init_theta, iter_sampling = 6250, iter_warmup = 1250, chains = 4, parallel_chains = 4, adapt_delta = 0.95)
+AWB_ECA_stan_fit <- model$sample(data = data_list, seed = 1234, refresh = 10, init = init_theta, iter_sampling = 6250, iter_warmup = 1250, chains = num_chains, parallel_chains = num_chains, adapt_delta = 0.95)

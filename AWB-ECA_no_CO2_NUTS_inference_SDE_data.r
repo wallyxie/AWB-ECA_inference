@@ -6,6 +6,8 @@ library(bayesplot)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
+num_chains <- 4
+
 color_scheme_set("viridisA")
 
 #Data to be passed to Stan.
@@ -54,7 +56,7 @@ init_theta_single = list(
                   r_E = r_E_prior_dist_params[1],
                   r_L = r_L_prior_dist_params[1]
                   )
-init_theta = list(init_theta_single)[rep(1, 4)] #4 copies of initial theta proposals for each of the 4 HMC chains to be used.
+init_theta = list(init_theta_single)[rep(1, num_chains)] #num_chains copies of initial theta proposals for each of the HMC chains to be used.
 
 data_list = list(
     state_dim = state_dim,
@@ -85,7 +87,7 @@ lines <- readLines(file_path, encoding = "ASCII")
 for (n in 1:length(lines)) cat(lines[n],'\n')
 model <- cmdstan_model(file_path)
 
-AWB_ECA_stan_fit_no_CO2 <- model$sample(data = data_list, seed = 1234, refresh = 10, init = init_theta, iter_sampling = 5000, iter_warmup = 1000, chains = 4, parallel_chains = 4, adapt_delta = 0.95)
+AWB_ECA_stan_fit_no_CO2 <- model$sample(data = data_list, seed = 1234, refresh = 10, init = init_theta, iter_sampling = 5000, iter_warmup = 1000, chains = num_chains, parallel_chains = num_chains, adapt_delta = 0.95)
 
 #Save Stan fit object and NUTS inference results.
 AWB_ECA_stan_fit_no_CO2$save_object(file = "AWB-ECA_SS_no_CO2_NUTS_inference_SDE_data.rds")
