@@ -14,3 +14,4 @@ AWB-ECA_CO2_cont_time
 *.csv
 AWB-ECA_det_test.ipynb
 AWB-ECA_posterior_plotting.r
+plot_prior_post_AWB.ipynb
