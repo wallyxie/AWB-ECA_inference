@@ -188,7 +188,7 @@ generated quantities {
   }
   // Add observation noise to posterior predictive model output to obtain posterior predictive samples.
   for (i in 1:state_dim) {
-    y_hat_post_pred[i,] = normal_rng(x_hat_post_pred[i,], obs_error_scale * x_hat_post_pred[i,]);
+    y_hat_post_pred[i,] = normal_rng(x_hat_post_pred[i,], obs_error_scale * mean(x_hat_post_pred[i,]));
   }
   print("Iteration posterior predictive y observation: ", y_hat_post_pred);
 
