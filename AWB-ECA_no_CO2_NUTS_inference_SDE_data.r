@@ -81,7 +81,7 @@ data_list = list(
     r_L_prior_dist_params = r_L_prior_dist_params
     )
 
-file_path <- 'AWB-ECA_SS_no_CO2_cont_time.stan' #Read in Stan model code.
+file_path <- 'AWB-ECA_no_CO2_cont_time.stan' #Read in Stan model code.
 lines <- readLines(file_path, encoding = "ASCII")
 for (n in 1:length(lines)) cat(lines[n],'\n')
 model <- cmdstan_model(file_path)
