@@ -86,7 +86,7 @@ lines <- readLines(file_path, encoding = "ASCII")
 for (n in 1:length(lines)) cat(lines[n],'\n')
 model <- cmdstan_model(file_path)
 
-AWB_ECA_stan_fit_no_CO2 <- model$sample(data = data_list, seed = 1234, refresh = 10, init = init_theta, iter_sampling = 5000, iter_warmup = 1000, chains = num_chains, parallel_chains = num_chains, adapt_delta = 0.95)
+AWB_ECA_stan_fit_no_CO2 <- model$sample(data = data_list, seed = 1234, refresh = 10, init = init_theta, iter_sampling = 2500, iter_warmup = 1000, chains = num_chains, parallel_chains = num_chains, adapt_delta = 0.95)
 
 #Save Stan fit object and NUTS inference results.
 AWB_ECA_stan_fit_no_CO2$save_object(file = "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data.rds")
