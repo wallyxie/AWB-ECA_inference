@@ -168,7 +168,7 @@ model {
 
   // Likelihood evaluation.
   for (i in 1:state_dim) {
-    y[i,] ~ normal(x_hat[i,], obs_error_scale * x_hat[i,]);
+    y[i,] ~ normal(x_hat[i,], obs_error_scale * mean(x_hat[i,]));
   }
 }
 
