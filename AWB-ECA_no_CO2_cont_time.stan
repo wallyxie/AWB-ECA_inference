@@ -122,7 +122,7 @@ data {
 
 transformed data {
   real t0 = 0; // Initial time.
-  vector<lower=0>[state_dim] obs_sd; // Observation noise based on state and CO2 magnitudes in data.
+  vector<lower=0>[state_dim] obs_sd; // Observation noise based on state magnitudes in data.
 
   for (i in 1:state_dim) {
     obs_sd[i] = obs_error_scale * mean(y[i,]);
@@ -184,7 +184,7 @@ generated quantities {
 
   print("Iteration theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
 
-  print("Iteration x_hat_add_CO2: ", x_hat_add_CO2);  
+  print("Iteration x_hat: ", x_hat);  
 
   x_hat_post_pred_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
   // Transform posterior predictive model output to match observations y in dimensions, [state_dim, N_t].

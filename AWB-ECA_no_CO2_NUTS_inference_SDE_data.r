@@ -7,8 +7,6 @@ options(mc.cores = parallel::detectCores())
 
 num_chains <- 4
 
-color_scheme_set("viridisA")
-
 #Data to be passed to Stan.
 state_dim <- 4
 temp_ref <- 283
@@ -90,9 +88,9 @@ AWB_ECA_stan_fit_no_CO2 <- model$sample(data = data_list, seed = 1234, refresh =
 
 #Save Stan fit object and NUTS inference results.
 AWB_ECA_stan_fit_no_CO2$save_object(file = "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data.rds")
-AWB_ECA_stan_fit_no_CO2_post <- as_tibble(AWB_ECA_stan_fit_no_CO2$draws(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L"), format = "draws_df"))
-write_csv(AWB_ECA_stan_fit_no_CO2_post, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_post.csv")
-AWB_ECA_stan_fit_no_CO2_post_pred <- as_tibble(AWB_ECA_stan_fit_no_CO2$draws(format = "draws_df"))
-write_csv(AWB_ECA_stan_fit_no_CO2_post_pred, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_post_pred.csv")
-AWB_ECA_stan_fit_no_CO2_summary <- as_tibble(AWB_ECA_stan_fit_no_CO2$summary(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L", "y_hat_post_pred")))
-write_csv(AWB_ECA_stan_fit_no_CO2_summary, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_post_and_post_pred_summary.csv")
+AWB_ECA_stan_fit_no_CO2_theta_post <- as_tibble(AWB_ECA_stan_fit_no_CO2$draws(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L"), format = "draws_df"))
+write_csv(AWB_ECA_stan_fit_no_CO2_theta_post, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_theta_post.csv")
+AWB_ECA_stan_fit_no_CO2_theta_and_x_post <- as_tibble(AWB_ECA_stan_fit_no_CO2$draws(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L", "x_hat"), format = "draws_df"))
+write_csv(AWB_ECA_stan_fit_no_CO2_theta_and_x_post, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_theta_and_x_post.csv")
+AWB_ECA_stan_fit_no_CO2_post_summary <- as_tibble(AWB_ECA_stan_fit_no_CO2$summary(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L", "x_hat")))
+write_csv(AWB_ECA_stan_fit_no_CO2_post_summary, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_post_summary.csv")
