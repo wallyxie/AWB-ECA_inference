@@ -173,7 +173,7 @@ model {
 
   // Likelihood evaluation.
   for (i in 1:state_dim) {
-    y[i,] ~ normal(x_hat[i,], obs_error_scale * obs_sd[i]);
+    y[i,] ~ normal(x_hat[i,], obs_sd[i]);
   }
 }
 
@@ -193,7 +193,7 @@ generated quantities {
   }
   // Add observation noise to posterior predictive model output to obtain posterior predictive samples.
   for (i in 1:state_dim) {
-    y_hat_post_pred[i,] = normal_rng(x_hat_post_pred[i,], obs_error_scale * obs_sd[i]);
+    y_hat_post_pred[i,] = normal_rng(x_hat_post_pred[i,], obs_sd[i]);
   }
   print("Iteration posterior predictive y observation: ", y_hat_post_pred);
 
