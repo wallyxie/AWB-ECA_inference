@@ -184,6 +184,8 @@ generated quantities {
 
   print("Iteration theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
 
+  print("Iteration x_hat_add_CO2: ", x_hat_add_CO2);  
+
   x_hat_post_pred_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
   // Transform posterior predictive model output to match observations y in dimensions, [state_dim, N_t].
   for (i in 1:N_t) {
@@ -195,7 +197,7 @@ generated quantities {
   for (i in 1:state_dim) {
     y_hat_post_pred[i,] = normal_rng(x_hat_post_pred[i,], obs_sd[i]);
   }
-  print("Iteration posterior predictive y observation: ", y_hat_post_pred);
+  //print("Iteration posterior predictive y observation: ", y_hat_post_pred);
 
   // Obtain prior predictive samples. 
   real u_Q_ref_prior_pred = normal_lb_ub_rng(u_Q_ref_prior_dist_params[1], u_Q_ref_prior_dist_params[1] * prior_scale_factor, u_Q_ref_prior_dist_params[2], u_Q_ref_prior_dist_params[3]);
