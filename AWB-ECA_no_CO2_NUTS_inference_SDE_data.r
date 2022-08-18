@@ -17,7 +17,7 @@ obs_every <- 10 #Observations every 10 hours.
 t <- 2000 #Total time span of ODE simulation.
 x_hat0 <- c(99.67476616, 1.94468895, 1.87968205, 2.01789474) #Originally sampled values used for Euler-Maruyama solution.
 y_full <- read_csv('generated_data/SAWB-ECA-SS_no_CO2_trunc_short_2021_12_24_12_46_sample_y_t_2000_dt_0-01_sd_scale_0-25.csv')
-y <- y_full %>% filter(hour <= t) %>% tail(-1)
+y <- y_full %>% filter(hour <= t)
 ts <- y$hour
 N_t <- length(ts)
 y <- y %>% select(-hour)
@@ -94,7 +94,7 @@ cat(elapsed, file = 'NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_elapsed
 AWB_ECA_stan_fit_no_CO2$save_object(file = "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data.rds")
 AWB_ECA_stan_fit_no_CO2_theta_post <- as_tibble(AWB_ECA_stan_fit_no_CO2$draws(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L"), format = "draws_df"))
 write_csv(AWB_ECA_stan_fit_no_CO2_theta_post, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_theta_post.csv")
-AWB_ECA_stan_fit_no_CO2_theta_and_x_post <- as_tibble(AWB_ECA_stan_fit_no_CO2$draws(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L", "x_hat"), format = "draws_df"))
-write_csv(AWB_ECA_stan_fit_no_CO2_theta_and_x_post, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_theta_and_x_post.csv")
+AWB_ECA_stan_fit_no_CO2_x_post <- as_tibble(AWB_ECA_stan_fit_no_CO2$draws(c("x_hat"), format = "draws_df"))
+write_csv(AWB_ECA_stan_fit_no_CO2_x_post, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_x_post.csv")
 AWB_ECA_stan_fit_no_CO2_post_summary <- as_tibble(AWB_ECA_stan_fit_no_CO2$summary(c("u_Q_ref", "Q", "a_MSA", "K_DE", "K_UE", "V_DE_ref", "V_UE_ref", "Ea_V_DE", "Ea_V_UE", "r_M", "r_E", "r_L", "x_hat")))
 write_csv(AWB_ECA_stan_fit_no_CO2_post_summary, "NUTS_results/AWB-ECA_no_CO2_NUTS_inference_SDE_data_post_summary.csv")
