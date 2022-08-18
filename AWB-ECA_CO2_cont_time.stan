@@ -191,7 +191,7 @@ transformed parameters {
   array[state_dim+1] vector<lower=0>[N_t] x_hat_add_CO2;
 
   // Solve ODE.
-  array[N_t] vector<lower=0>[state_dim] x_hat_intmd = ode_rk45(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
+  array[N_t] vector<lower=0>[state_dim] x_hat_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
 
   // Transform model output to match observations y in shape, [state_dim, N_t].
   array[state_dim] vector<lower=0>[N_t] x_hat;
@@ -234,49 +234,49 @@ model {
   }
 }
 
-generated quantities {
-  array[N_t] vector<lower=0>[state_dim] x_hat_post_pred_intmd;
-  array[state_dim] vector<lower=0>[N_t] x_hat_post_pred;
-  vector<lower=0>[N_t] x_hat_post_pred_CO2;
-  array[state_dim+1] vector<lower=0>[N_t] x_hat_post_pred_add_CO2;
-  array[state_dim+1, N_t] real<lower=0> y_hat_post_pred;
-
-  //print("Iteration theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L);
-
-  //print("Iteration x_hat_add_CO2: ", x_hat_add_CO2);  
-
-  x_hat_post_pred_intmd = ode_rk45(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise);
-  // Transform posterior predictive model output to match observations y in dimensions, [state_dim, N_t].
-  for (i in 1:N_t) {
-    for (j in 1:state_dim) {
-      x_hat_post_pred[j, i] = x_hat_post_pred_intmd[i, j];
-    }
-  }
-
-  // Compute posterior predictive CO2.
-  x_hat_post_pred_CO2 = calc_AWB_ECA_CO2(ts, x_hat_post_pred, u_Q_ref, Q, K_UE, V_UE_ref, Ea_V_UE, temp_ref, temp_rise);   
-
-  // Append CO2 vector to posterior predictive x_hat.
-  x_hat_post_pred_add_CO2[1:4,] = x_hat_post_pred;
-  x_hat_post_pred_add_CO2[5,] = x_hat_post_pred_CO2;
-
-  // Add observation noise to posterior predictive model output to obtain posterior predictive samples.
-  for (i in 1:state_dim+1) {
-    y_hat_post_pred[i,] = normal_rng(x_hat_post_pred_add_CO2[i,], obs_sd[i]);
-  }
-  //print("Iteration posterior predictive y observation: ", y_hat_post_pred);
-
-  // Obtain prior predictive samples. 
-  real u_Q_ref_prior_pred = normal_lb_ub_rng(u_Q_ref_prior_dist_params[1], u_Q_ref_prior_dist_params[1] * prior_scale_factor, u_Q_ref_prior_dist_params[2], u_Q_ref_prior_dist_params[3]);
-  real Q_prior_pred = normal_lb_ub_rng(Q_prior_dist_params[1], Q_prior_dist_params[1] * prior_scale_factor, Q_prior_dist_params[2], Q_prior_dist_params[3]);
-  real a_MSA_prior_pred = normal_lb_ub_rng(a_MSA_prior_dist_params[1], a_MSA_prior_dist_params[1] * prior_scale_factor, a_MSA_prior_dist_params[2], a_MSA_prior_dist_params[3]);
-  real K_DE_prior_pred = normal_lb_ub_rng(K_DE_prior_dist_params[1], K_DE_prior_dist_params[1] * prior_scale_factor, K_DE_prior_dist_params[2], K_DE_prior_dist_params[3]);
-  real K_UE_prior_pred = normal_lb_ub_rng(K_UE_prior_dist_params[1], K_UE_prior_dist_params[1] * prior_scale_factor, K_UE_prior_dist_params[2], K_UE_prior_dist_params[3]);
-  real V_DE_ref_prior_pred = normal_lb_ub_rng(V_DE_ref_prior_dist_params[1], V_DE_ref_prior_dist_params[1] * prior_scale_factor, V_DE_ref_prior_dist_params[2], V_DE_ref_prior_dist_params[3]);
-  real V_UE_ref_prior_pred = normal_lb_ub_rng(V_UE_ref_prior_dist_params[1], V_UE_ref_prior_dist_params[1] * prior_scale_factor, V_UE_ref_prior_dist_params[2], V_UE_ref_prior_dist_params[3]);
-  real Ea_V_DE_prior_pred = normal_lb_ub_rng(Ea_V_DE_prior_dist_params[1], Ea_V_DE_prior_dist_params[1] * prior_scale_factor, Ea_V_DE_prior_dist_params[2], Ea_V_DE_prior_dist_params[3]);
-  real Ea_V_UE_prior_pred = normal_lb_ub_rng(Ea_V_UE_prior_dist_params[1], Ea_V_UE_prior_dist_params[1] * prior_scale_factor, Ea_V_UE_prior_dist_params[2], Ea_V_UE_prior_dist_params[3]);
-  real r_M_prior_pred = normal_lb_ub_rng(r_M_prior_dist_params[1], r_M_prior_dist_params[1] * prior_scale_factor, r_M_prior_dist_params[2], r_M_prior_dist_params[3]);
-  real r_E_prior_pred = normal_lb_ub_rng(r_E_prior_dist_params[1], r_E_prior_dist_params[1] * prior_scale_factor, r_E_prior_dist_params[2], r_E_prior_dist_params[3]);
-  real r_L_prior_pred = normal_lb_ub_rng(r_L_prior_dist_params[1], r_L_prior_dist_params[1] * prior_scale_factor, r_L_prior_dist_params[2], r_L_prior_dist_params[3]);
-}
+/* generated quantities { */
+/*   array[N_t] vector<lower=0>[state_dim] x_hat_post_pred_intmd; */
+/*   array[state_dim] vector<lower=0>[N_t] x_hat_post_pred; */
+/*   vector<lower=0>[N_t] x_hat_post_pred_CO2; */
+/*   array[state_dim+1] vector<lower=0>[N_t] x_hat_post_pred_add_CO2; */
+/*   array[state_dim+1, N_t] real<lower=0> y_hat_post_pred; */
+/*  */
+/*   //print("Iteration theta: ", "u_Q_ref = ", u_Q_ref, ", Q = ", Q, ", a_MSA = ", a_MSA, ", K_DE = ", K_DE, ", K_UE = ", K_UE, ", V_DE_ref = ", V_DE_ref, ", V_UE_ref = ", V_UE_ref, ", Ea_V_DE = ", Ea_V_DE, ", Ea_V_UE = ", Ea_V_UE, ", r_M = ", r_M, ", r_E = ", r_E, ", r_L = ", r_L); */
+/*  */
+/*   //print("Iteration x_hat_add_CO2: ", x_hat_add_CO2);   */
+/*  */
+/*   x_hat_post_pred_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); */
+/*   // Transform posterior predictive model output to match observations y in dimensions, [state_dim, N_t]. */
+/*   for (i in 1:N_t) { */
+/*     for (j in 1:state_dim) { */
+/*       x_hat_post_pred[j, i] = x_hat_post_pred_intmd[i, j]; */
+/*     } */
+/*   } */
+/*  */
+/*   // Compute posterior predictive CO2. */
+/*   x_hat_post_pred_CO2 = calc_AWB_ECA_CO2(ts, x_hat_post_pred, u_Q_ref, Q, K_UE, V_UE_ref, Ea_V_UE, temp_ref, temp_rise);    */
+/*  */
+/*   // Append CO2 vector to posterior predictive x_hat. */
+/*   x_hat_post_pred_add_CO2[1:4,] = x_hat_post_pred; */
+/*   x_hat_post_pred_add_CO2[5,] = x_hat_post_pred_CO2; */
+/*  */
+/*   // Add observation noise to posterior predictive model output to obtain posterior predictive samples. */
+/*   for (i in 1:state_dim+1) { */
+/*     y_hat_post_pred[i,] = normal_rng(x_hat_post_pred_add_CO2[i,], obs_sd[i]); */
+/*   } */
+/*   //print("Iteration posterior predictive y observation: ", y_hat_post_pred); */
+/*  */
+/*   // Obtain prior predictive samples.  */
+/*   real u_Q_ref_prior_pred = normal_lb_ub_rng(u_Q_ref_prior_dist_params[1], u_Q_ref_prior_dist_params[1] * prior_scale_factor, u_Q_ref_prior_dist_params[2], u_Q_ref_prior_dist_params[3]); */
+/*   real Q_prior_pred = normal_lb_ub_rng(Q_prior_dist_params[1], Q_prior_dist_params[1] * prior_scale_factor, Q_prior_dist_params[2], Q_prior_dist_params[3]); */
+/*   real a_MSA_prior_pred = normal_lb_ub_rng(a_MSA_prior_dist_params[1], a_MSA_prior_dist_params[1] * prior_scale_factor, a_MSA_prior_dist_params[2], a_MSA_prior_dist_params[3]); */
+/*   real K_DE_prior_pred = normal_lb_ub_rng(K_DE_prior_dist_params[1], K_DE_prior_dist_params[1] * prior_scale_factor, K_DE_prior_dist_params[2], K_DE_prior_dist_params[3]); */
+/*   real K_UE_prior_pred = normal_lb_ub_rng(K_UE_prior_dist_params[1], K_UE_prior_dist_params[1] * prior_scale_factor, K_UE_prior_dist_params[2], K_UE_prior_dist_params[3]); */
+/*   real V_DE_ref_prior_pred = normal_lb_ub_rng(V_DE_ref_prior_dist_params[1], V_DE_ref_prior_dist_params[1] * prior_scale_factor, V_DE_ref_prior_dist_params[2], V_DE_ref_prior_dist_params[3]); */
+/*   real V_UE_ref_prior_pred = normal_lb_ub_rng(V_UE_ref_prior_dist_params[1], V_UE_ref_prior_dist_params[1] * prior_scale_factor, V_UE_ref_prior_dist_params[2], V_UE_ref_prior_dist_params[3]); */
+/*   real Ea_V_DE_prior_pred = normal_lb_ub_rng(Ea_V_DE_prior_dist_params[1], Ea_V_DE_prior_dist_params[1] * prior_scale_factor, Ea_V_DE_prior_dist_params[2], Ea_V_DE_prior_dist_params[3]); */
+/*   real Ea_V_UE_prior_pred = normal_lb_ub_rng(Ea_V_UE_prior_dist_params[1], Ea_V_UE_prior_dist_params[1] * prior_scale_factor, Ea_V_UE_prior_dist_params[2], Ea_V_UE_prior_dist_params[3]); */
+/*   real r_M_prior_pred = normal_lb_ub_rng(r_M_prior_dist_params[1], r_M_prior_dist_params[1] * prior_scale_factor, r_M_prior_dist_params[2], r_M_prior_dist_params[3]); */
+/*   real r_E_prior_pred = normal_lb_ub_rng(r_E_prior_dist_params[1], r_E_prior_dist_params[1] * prior_scale_factor, r_E_prior_dist_params[2], r_E_prior_dist_params[3]); */
+/*   real r_L_prior_pred = normal_lb_ub_rng(r_L_prior_dist_params[1], r_L_prior_dist_params[1] * prior_scale_factor, r_L_prior_dist_params[2], r_L_prior_dist_params[3]); */
+/* } */
