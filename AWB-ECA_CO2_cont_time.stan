@@ -128,13 +128,13 @@ functions {
     return CO2;    
   }
 
-  // From https://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/12.
-  real normal_lb_ub_rng(real mu, real sigma, real lb, real ub) {
-      real p1 = normal_cdf(lb, mu, sigma);  // cdf with lower bound
-      real p2 = normal_cdf(ub, mu, sigma);  // cdf with upper bound
-      real u = uniform_rng(p1, p2);
-      return (sigma * inv_Phi(u)) + mu;  // inverse cdf 
-  }
+  /* // From https://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/12. */
+  /* real normal_lb_ub_rng(real mu, real sigma, real lb, real ub) { */
+  /*     real p1 = normal_cdf(lb, mu, sigma);  // cdf with lower bound */
+  /*     real p2 = normal_cdf(ub, mu, sigma);  // cdf with upper bound */
+  /*     real u = uniform_rng(p1, p2); */
+  /*     return (sigma * inv_Phi(u)) + mu;  // inverse cdf  */
+  /* } */
 }
 
 data {
@@ -245,7 +245,7 @@ model {
 /*  */
 /*   //print("Iteration x_hat_add_CO2: ", x_hat_add_CO2);   */
 /*  */
-/*   x_hat_post_pred_intmd = ode_ckrk(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); */
+/*   x_hat_post_pred_intmd = ode_rk45(AWB_ECA_ODE, x_hat0, t0, ts, u_Q_ref, Q, a_MSA, K_DE, K_UE, V_DE_ref, V_UE_ref, Ea_V_DE, Ea_V_UE, r_M, r_E, r_L, temp_ref, temp_rise); */
 /*   // Transform posterior predictive model output to match observations y in dimensions, [state_dim, N_t]. */
 /*   for (i in 1:N_t) { */
 /*     for (j in 1:state_dim) { */

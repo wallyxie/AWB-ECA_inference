@@ -16,9 +16,9 @@ prior_scale_factor <- 0.25
 obs_error_scale <- 0.1
 obs_every <- 10 #Observations every 10 hours.
 t <- 2000 #Total time span of ODE simulation.
-x_hat0 <- c(99.67476616, 1.94468895, 1.87968205, 2.01789474) #Originally sampled values used for Euler-Maruyama solution.
+x_hat0 <- c(114.572059600027, 0.881891334730684, 1.51538971282248, 2.14394308159024) #Plugging observed y0 values for ODE solver x0.
 y_full <- read_csv('generated_data/SAWB-ECA-SS_no_CO2_trunc_short_2021_12_24_12_46_sample_y_t_2000_dt_0-01_sd_scale_0-25.csv')
-y <- y_full %>% filter(hour <= t)
+y <- y_full %>% filter(hour <= t) %>% tail(-1)
 ts <- y$hour
 N_t <- length(ts)
 y <- y %>% select(-hour)
