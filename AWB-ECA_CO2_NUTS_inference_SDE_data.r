@@ -86,7 +86,7 @@ for (n in 1:length(lines)) cat(lines[n],'\n')
 model <- cmdstan_model(file_path)
 
 start = Sys.time()
-AWB_ECA_stan_fit_CO2 <- model$sample(data = data_list, seed = 1234, refresh = 10, init = init_theta, iter_sampling = 2500, iter_warmup = 500, chains = num_chains, parallel_chains = num_chains, adapt_delta = 0.95)
+AWB_ECA_stan_fit_CO2 <- model$sample(data = data_list, seed = 1234, refresh = 10, init = init_theta, iter_sampling = 1250, iter_warmup = 500, chains = num_chains, parallel_chains = num_chains, adapt_delta = 0.95)
 stop = Sys.time()
 elapsed = stop - start
 cat(elapsed, file = 'NUTS_results/AWB-ECA_CO2_NUTS_inference_SDE_data_elapsed.txt')
